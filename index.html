@@ -1,0 +1,114 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense tracker</title>
+    <style>
+        body{
+            background-color: antiquewhite;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>write Expenses of cars </h1>
+        <form onsubmit="savetodatabase(event)">
+            <label>Choose expense</label>
+            <input type="number" name="expense" id="expensetag" placeholder="expense"/>
+    
+            <label>Choose description</label>
+            <input type="text" name="description" id="descriptiontag" placeholder="description" required/>
+            
+            <label>choose a category</label>
+            <select id="cars" name="carname">
+                <option value="Benz">Benz</option>
+                <option value="Porsche">Porsche</option>
+                <option value="Audi">Audi</option>
+                <option value="Rolls royce">Rolls royce</option>
+                <option value="BMW">BMW</option>   
+            </select>
+            <button>Submit</button>
+        </form>
+    </div>
+    <h2>Table of Expenses</h2>
+    <ul id="list-of-cars"></ul>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script>
+        function savetodatabase(event){
+            event.preventDefault();
+            const expense = event.target.expense.value;
+            const description = event.target.description.value;
+            const carname = event.target.carname.value;
+            const obj = {
+                expense,
+                description,
+                carname
+            }
+            //console.log(obj)
+            axios.post("http://localhost:4000/expensetracker/add-category",obj)
+            .then((response)=>{
+                console.log(response.data.newExpensetrackRecord);
+                document.getElementById("expensetag").value = '';
+                document.getElementById("descriptiontag").value = '';
+                document.getElementById("cars").value ='';
+                displayOnScreen(response.data.newExpensetrackRecord)
+            })
+            .catch(err=>{
+                console.log("error occured at axios.post request",err)
+            })
+            
+        }
+        function displayOnScreen(obj){
+                const parentelem = document.getElementById("list-of-cars");
+                const childelem = document.createElement('ul');
+                childelem.setAttribute('id',obj.id);
+                childelem.textContent = obj.expense + '-' + obj.description + '-' + obj.carname + " ";
+
+                const deletebtn = document.createElement('input');
+                deletebtn.type = 'button';
+                deletebtn.value = 'Delete';
+                deletebtn.setAttribute('id','delete');
+
+                deletebtn.onclick = ()=>{
+                    axios.delete(`http://localhost:4000/expensetracker/delete-category/${obj.id}`)
+                   .then(res=>{
+                    console.log("deleted")
+                    parentelem.removeChild(childelem);
+                   })
+                   .catch(err=>{
+                    console.log(err)
+                   })               
+                }
+
+                const editbtn = document.createElement('input');
+                editbtn.type = 'button';
+                editbtn.value = 'Edit';
+                editbtn.setAttribute('id','edit');
+                editbtn.onclick =()=>{
+                    document.getElementById("expensetag").value = obj.expense;
+                    document.getElementById("descriptiontag").value = obj.description;
+                    document.getElementById("cars").value =obj.carname;
+                    parentelem.removeChild(childelem);
+                }
+                childelem.appendChild(deletebtn);
+                childelem.appendChild(editbtn);
+                parentelem.appendChild(childelem);
+
+        }
+        window.addEventListener("DOMContentLoaded",()=>{
+            axios.get("http://localhost:4000/expensetracker/get-allcategories")
+            .then(res=>{
+                for(let i=0;i<res.data.allcategorydetails.length;i++){
+                    displayOnScreen(res.data.allcategorydetails[i])
+                }
+            })
+            .catch(err=>{
+                console.log("unable to get all users",err)
+            })
+        })
+
+    </script>
+    
+</body>
+</html>
